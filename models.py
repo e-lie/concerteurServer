@@ -7,14 +7,16 @@ class Question(db.Model):
     date = db.Column(db.Date())
     title = db.Column(db.Unicode(300))
     text = db.Column(db.Unicode(1000))
+    current = db.Column(db.Boolean())
 
     messages = db.relationship('Message', backref='question')
 
 
-    def __init__(self, date, text, title):
+    def __init__(self, date, text, title, current):
         self.date = date
         self.text = text
         self.title = title
+        self.current = current
 
     def __repr__(self):
         return '<Question {}: {}>'.format(self.id, self.text)
@@ -42,9 +44,11 @@ class Message(db.Model):
     text = db.Column(db.Unicode(1000))
     audio = db.Column(db.String(500))
 
-    def __init__(self, date, text):
+    def __init__(self, date, text, question_id, user_id):
         self.date = date
         self.text = text
+        self.user_id = user_id
+        self.question_id = question_id
 
     def __repr__(self):
         return '<Message {}: {}>'.format(self.id, self.text)

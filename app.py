@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap
 from flask_wtf import Form
@@ -33,8 +33,14 @@ def add_question():
     question = None
     form = AddQuestionForm()
     if form.validate_on_submit():
-        question = Question(datetime.utcnow().__str__(), form.title.data, form.text.data)
+        #change preceding current question 
+        currQuestion = db.session.query(Question).filter(Question.current==True).first()
+        if currQuestion:
+            currQuestion.current = False
+            db.session.add(currQuestion)
         
+        question = Question(date=datetime.utcnow().__str__(), title=form.title.data, text=form.text.data, current=True)
+
         form.title.data = ''
         form.text.data = ''
 
@@ -49,6 +55,31 @@ def add_question():
 def questions():
     questions = db.session.query(Question).order_by(Question.date).all()
     return render_template('questions.html', questions=questions)
+
+@app.route('/testPost', methods=['POST'])
+def testPost():
+    return request.form['person']
+
+@app.route('/addsms/<num>/<text>/')
+def addsms(num, text):
+    question = db.session.query(Question).filter(Question.current==True).first()
+    hashNum = hash(num)
+
+    if question:
+        user = db.session.query(User).filter(User.numHash==hashNum).first()
+        if not user:
+            user = User(hashNum)
+            db.session.add(user)
+
+        message = Message(date=datetime.utcnow(), text=text, question_id=question.id,
+                        user_id=user.id)
+        db.session.add(message)
+
+        db.session.commit()
+        return "<h1>{}: {}</h1>".format(hashNum, text)
+    else:
+        print('pas de question disponible', file='./concerteur.err')
+        return "Error adding message : no available question"
 
 
 

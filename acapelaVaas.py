@@ -28,8 +28,9 @@ def getAcapelaSound(message, url='http://vaas.acapela-group.com/Services/Synthes
 
 
 if __name__ == "__main__":
-
-    mp3Response = getAcapelaSound(message='voilà un message relou')
+    
+    with open('lastmessage.txt', 'r') as sms:
+        mp3Response = getAcapelaSound(message=sms.read())
 
     with open('message_anais.mp3', 'wb') as f:
         f.write(mp3Response)
