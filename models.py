@@ -34,7 +34,6 @@ class User(db.Model):
     def __repr__(self):
         return '<User {}: {}>'.format(self.id, self.numHash)
 
-
 class Message(db.Model):
     __tablename__ = 'messages'
     id = db.Column(db.Integer, primary_key=True)

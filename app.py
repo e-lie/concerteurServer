@@ -66,8 +66,10 @@ def addsms():
         user = db.session.query(User).filter(User.numHash==hashNum).first()
         if not user:
             user = User(hashNum, message)
-            db.session.add(user)
+        else:
+            user.messages[message]
 
+        db.session.add(user)
         db.session.add(message)
 
         db.session.commit()
@@ -75,11 +77,4 @@ def addsms():
     else:
         print('pas de question disponible', file='./concerteur.err')
         #return "Error adding message : no available question"
-
-
-
-
-if __name__ == '__main__':
-    app.run()
-
 

@@ -12,6 +12,5 @@ for i in `seq $SMS_MESSAGES` ; do
 	fi
 	sms="$sms$sms_text"
 done
-#echo "$sms" >> /var/www/html/RaspiSMS/receiveds/"$date".txt
-wget "http://localhost:9000/addsms/$sms_num/$sms" -o /dev/null
 
+python3 messageReception.py "$sms_num" "$sms"
