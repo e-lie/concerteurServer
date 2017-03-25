@@ -1,3 +1,6 @@
-migration
+__pycache__
+inbox
+migrations
 venv
 *.pyc
+.env

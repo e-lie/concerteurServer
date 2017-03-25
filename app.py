@@ -56,30 +56,25 @@ def questions():
     questions = db.session.query(Question).order_by(Question.date).all()
     return render_template('questions.html', questions=questions)
 
-@app.route('/testPost', methods=['POST'])
-def testPost():
-    return request.form['person']
-
-@app.route('/addsms/<num>/<text>/')
-def addsms(num, text):
+@app.route('/addsms', methods=['POST'])
+def addsms():
     question = db.session.query(Question).filter(Question.current==True).first()
-    hashNum = hash(num)
 
     if question:
+        hashNum = hash(request.form['num'])
+        message = Message(date=datetime.utcnow(), text=request.form['text'], question_id=question.id)
         user = db.session.query(User).filter(User.numHash==hashNum).first()
         if not user:
-            user = User(hashNum)
+            user = User(hashNum, message)
             db.session.add(user)
 
-        message = Message(date=datetime.utcnow(), text=text, question_id=question.id,
-                        user_id=user.id)
         db.session.add(message)
 
         db.session.commit()
-        return "<h1>{}: {}</h1>".format(hashNum, text)
+        return "<h1>{}: {}</h1>".format(hashNum, request.form['text'])
     else:
         print('pas de question disponible', file='./concerteur.err')
-        return "Error adding message : no available question"
+        #return "Error adding message : no available question"
 
 
 

@@ -27,8 +27,9 @@ class User(db.Model):
     numHash = db.Column(db.String(100))
     messages = db.relationship('Message', backref='user')
 
-    def __init__(self, numHash):
+    def __init__(self, numHash, message):
         self.numHash = numHash
+        self.messages = [message]
 
     def __repr__(self):
         return '<User {}: {}>'.format(self.id, self.numHash)
@@ -44,10 +45,9 @@ class Message(db.Model):
     text = db.Column(db.Unicode(1000))
     audio = db.Column(db.String(500))
 
-    def __init__(self, date, text, question_id, user_id):
+    def __init__(self, date, text, question_id):
         self.date = date
         self.text = text
-        self.user_id = user_id
         self.question_id = question_id
 
     def __repr__(self):
