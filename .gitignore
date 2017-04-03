@@ -3,4 +3,5 @@ inbox
 migrations
 venv
 *.pyc
+*.mp3
 .env
