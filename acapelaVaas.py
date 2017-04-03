@@ -2,7 +2,7 @@ from urllib import request, parse
 
 
 
-def getAcapelaSound(message, url='http://vaas.acapela-group.com/Services/Synthesizer',
+def get_acapela_sound(message, url='http://vaas.acapela-group.com/Services/Synthesizer',
                     loginType='EVAL_VAAS', loginUser='EVAL_7824973',
                     loginPassword='dbhukc6j', voice='anais22k', requestType='SOUND'):
 

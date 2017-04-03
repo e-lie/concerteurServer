@@ -14,6 +14,7 @@ Jinja2==2.9.5
 Mako==1.0.6
 MarkupSafe==1.0
 packaging==16.8
+parse==1.8.0
 PyMySQL==0.7.10
 pyparsing==2.2.0
 python-editor==1.0.3

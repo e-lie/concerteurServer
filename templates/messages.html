@@ -1,0 +1,24 @@
+{% extends "bootstrap/base.html" %}
+
+{% block title %}Concerteur - Messages{% endblock %}
+
+
+{% block navbar %}
+    {% include 'navbar.html' %}
+{% endblock %}
+
+
+{% block content %}
+<div class="container">
+<div class="page-header">
+<h1>Messages</h1>
+{% for message in messages %}
+	<p>{{ "question "+message.question.id.__str__()+": "+message.question.title+" ; "+message.question.text }}</p>
+	<p>{{ message.text }}</p>
+	<p>{{ message.audio_path }}</p>
+{% endfor %}
+</div>
+</div>
+{% endblock %}
+
+
