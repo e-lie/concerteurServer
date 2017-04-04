@@ -1,4 +1,5 @@
 #!/bin/sh
+
 date=$(date +%Y%m%d%H%M%S%N)
 first_time=1
 for i in `seq $SMS_MESSAGES` ; do
@@ -12,5 +13,8 @@ for i in `seq $SMS_MESSAGES` ; do
 	fi
 	sms="$sms$sms_text"
 done
+echo "test $sms_num $sms" >> /tmp/parseSMSout.txt
+python3 /var/www/concerteurServer/messageReception.py "$sms_num" "$sms"
 
-python3 messageReception.py "$sms_num" "$sms"
+
+exit 0
