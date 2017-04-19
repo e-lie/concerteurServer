@@ -117,8 +117,10 @@ def get_sound_list():
     mp3Names = []
     for sound in newerSounds:
         mp3Names.append(sound[0])
-
-    data = {'filenames':mp3Names, 'lastfilename':mp3Names[-1]}
+    if mp3Names:
+        data = {'filenames':mp3Names, 'lastfilename':mp3Names[-1]}
+    else:
+        data = {'filenames':mp3Names, 'lastfilename':filename}
     return jsonify(data)
 
 @app.route('/get-sound', methods=['POST'])
