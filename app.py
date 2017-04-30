@@ -24,6 +24,10 @@ class AddQuestionForm(Form):
     text = TextAreaField('Texte de la question', validators=[Required()])
     submit = SubmitField('Submit')
 
+class AddMessageForm(Form):
+    num = StringField('numéro de téléphone associé au message (33634354637 pour un portable)', validators=[Required()])
+    text = TextAreaField('Texte du message', validators=[Required()])
+    submit = SubmitField('Submit')
 
 @app.route('/')
 def concerteur_home():
@@ -34,7 +38,7 @@ def add_question():
     question = None
     form = AddQuestionForm()
     if form.validate_on_submit():
-        #change preceding current question 
+        #change current question to false before adding the new current question
         currQuestion = db.session.query(Question).filter(Question.current==True).first()
         if currQuestion:
             currQuestion.current = False
@@ -47,8 +51,6 @@ def add_question():
 
         db.session.add(question)
         db.session.commit()
-
-        #return redirect(url_for('questions'))
 
     return render_template('add_question.html', form=form )
 
@@ -65,43 +67,50 @@ def messages():
 
 
 #TODO add authentification for security
-@app.route('/add-sms', methods=['POST'])
+@app.route('/add-message', methods=['GET', 'POST'])
 def add_sms():
-    question = db.session.query(Question).filter(Question.current==True).first()
 
-    if question:
-        #FIXME install hashlib and use sha1 for this hash
-        hashNum = hash(request.form['num'])
-        message = Message(text=request.form['text'], question_id=question.id)
-        user = db.session.query(User).filter(User.numHash==hashNum).first()
-        if not user:
-            user = User(hashNum, message)
+    form = AddMessageForm()
+    if request.method == 'GET':
+        return render_template('add_message.html', form=form)
+
+    elif form.validate_on_submit():
+        question = db.session.query(Question).filter(Question.current==True).first()
+
+        if question:
+            #FIXME install hashlib and use sha1 for this hash
+            hashNum = hash(request.form['num'])
+            message = Message(text=request.form['text'], question_id=question.id)
+            user = db.session.query(User).filter(User.numHash==hashNum).first()
+            if not user:
+                user = User(hashNum, message)
+            else:
+                user.messages.append(message)
+
+            db.session.add(user)
+            db.session.add(message)
+            db.session.commit()
+            
+            #create a unique filename (id + timestamp + hash of the sender number)
+            #to link the "message" entry to a mp3 file on the server
+            mp3Name = message.id.__str__() + '_' + message.time_created.isoformat() + '_' + user.numHash.__str__() + '.mp3'
+            mp3Url = url_for('static', filename='mp3') + '/' + mp3Name
+            #create the file at that path
+            with open('.'+mp3Url, 'wb') as f:
+                mp3 = get_acapela_sound(message=message.text)
+                f.write(mp3)
+
+            message.audio_path = mp3Name
+            db.session.add(message)
+            db.session.commit()
+            
+            #return "<h1>{}: {}</h1>".format(hashNum, request.form['text'])
+            return render_template('add_message.html', form=form)
+
         else:
-            user.messages.append(message)
-
-        db.session.add(user)
-        db.session.add(message)
-        db.session.commit()
-        
-        #create a unique filename (id + timestamp + hash of the sender number)
-        #to link the "message" entry to a mp3 file on the server
-        mp3Name = message.id.__str__() + '_' + message.time_created.isoformat() + '_' + user.numHash.__str__() + '.mp3'
-        mp3Url = url_for('static', filename='mp3') + '/' + mp3Name
-        #create the file at that path
-        with open('.'+mp3Url, 'wb') as f:
-            mp3 = get_acapela_sound(message=message.text)
-            f.write(mp3)
-
-        message.audio_path = mp3Name
-        db.session.add(message)
-        db.session.commit()
-        
-        return "<h1>{}: {}</h1>".format(hashNum, request.form['text'])
-
-    else:
-        erreur = "Erreur : pas de question disponible pour ajouter des messages"
-        print( erreur )
-        return erreur
+            erreur = "Erreur : pas de question disponible pour ajouter des messages"
+            print( erreur )
+            return erreur
 
 
 @app.route('/get-sound-list', methods=['POST'])

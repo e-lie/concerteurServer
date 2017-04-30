@@ -13,9 +13,15 @@
 <div class="page-header">
 <h1>Questions</h1>
 {% for question in questions %}
-	<h3>{{ question.title }}</h3>
-	<p>{{ question.date }}</p>
-	<p>{{ question.text }}</p>
+	<div class="col-md-6 panel panel-default">
+        <div class="panel-heading">
+              <h3 class="panel-title">{{ question.title }}</h3>
+ 	      <p>{{ question.date }}</p>
+            </div>
+            <div class="panel-body">
+	<p>{{question.text }}</p>
+        </div>
+	</div>
 {% endfor %}
 </div>
 </div>
