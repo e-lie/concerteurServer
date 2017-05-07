@@ -7,8 +7,6 @@ from wtforms.validators import Required
 from acapelaVaas import get_acapela_sound
 from datetime import datetime
 from parse import parse
-
-
 import os
 
 app = Flask(__name__, static_url_path='/static')
@@ -43,7 +41,6 @@ def add_question():
         if currQuestion:
             currQuestion.current = False
             db.session.add(currQuestion)
-        
         question = Question(title=form.title.data, text=form.text.data, current=True)
 
         form.title.data = ''
@@ -52,18 +49,27 @@ def add_question():
         db.session.add(question)
         db.session.commit()
 
-    return render_template('add_question.html', form=form )
+        question.archive_name = '{}_{}_{}'.format(question.id, question.title.replace(' ','_'), question.time_created.isoformat())
+        #create archive directory
+        
+        dirpath = '{}/{}'.format(app.config['QUESTION_ARCHIVE_DIR'], question.archive_name)
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
 
-@app.route('/questions')
-def questions():
-    questions = db.session.query(Question).order_by(Question.time_created).all()
-    return render_template('questions.html', questions=questions)
+        db.session.commit()
+
+    return render_template('add_question.html', form=form )
 
     
 @app.route('/messages')
 def messages():
-    messages = db.session.query(Message).order_by(Message.id).all()
-    return render_template('messages.html', messages=messages)
+    questions = db.session.query(Question).order_by(Question.time_created.desc()).all()
+    return render_template('messages.html', questions=questions)
+    
+@app.route('/trash')
+def trash():
+    questions = db.session.query(Question).order_by(Question.time_created.desc()).all()
+    return render_template('trash.html', questions=questions)
 
 
 #TODO add authentification for security
@@ -74,7 +80,7 @@ def add_sms():
     if request.method == 'GET':
         return render_template('add_message.html', form=form)
 
-    elif form.validate_on_submit():
+    else:
         question = db.session.query(Question).filter(Question.current==True).first()
 
         if question:
@@ -93,14 +99,24 @@ def add_sms():
             
             #create a unique filename (id + timestamp + hash of the sender number)
             #to link the "message" entry to a mp3 file on the server
-            mp3Name = message.id.__str__() + '_' + message.time_created.isoformat() + '_' + user.numHash.__str__() + '.mp3'
-            mp3Url = url_for('static', filename='mp3') + '/' + mp3Name
-            #create the file at that path
-            with open('.'+mp3Url, 'wb') as f:
-                mp3 = get_acapela_sound(message=message.text)
-                f.write(mp3)
+            mp3_name = message.id.__str__() + '_' + message.time_created.isoformat() + '_' + user.numHash.__str__() + '.mp3'
+            mp3_path = '.' + url_for('static', filename='mp3') + '/' + mp3_name
+            mp3_archive_path = '{}/{}/{}'.format( app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, mp3_name)
+            messages_archive_file = '{}/{}/{}'.format( app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, app.config['MESSAGES_ARCHIVE_FILENAME'])
 
-            message.audio_path = mp3Name
+            message.audio_path = mp3_name
+
+            #create the file at that path
+            mp3_sound = get_acapela_sound(message=message.text)
+            with open(mp3_path, 'wb') as mp3:
+                mp3.write(mp3_sound)
+            with open(mp3_archive_path, 'wb') as archive_mp3:
+                archive_mp3.write(mp3_sound)
+
+            with open(messages_archive_file, 'a') as messages_file:
+                messages_file.write('{}\n\n{}\n------\n'.format(message.audio_path, message.text))
+
+
             db.session.add(message)
             db.session.commit()
             
@@ -113,23 +129,42 @@ def add_sms():
             return erreur
 
 
+
+
+@app.route('/del-message/<message_num>', methods=['GET'])
+def del_message(message_num):
+    message = db.session.query(Message).filter(Message.id == message_num).first()
+    message.trashed = True
+    db.session.add(message)
+    db.session.commit()
+    return 'Message {} mis à la poubelle. <br> <a href="/messages">retour</a>'.format(message_num)
+
 @app.route('/get-sound-list', methods=['POST'])
 def get_sound_list():
     
     filename = request.form['lastFilename']
     if filename:
-        messageId = parse("{}_{}_{}",filename)[0]
+        message_id = parse("{}_{}_{}",filename)[0]
     else:
-        messageId = 1
+        message_id = 1
 
-    newerSounds = db.session.query(Message.audio_path).filter(Message.id > messageId).all()
-    mp3Names = []
-    for sound in newerSounds:
-        mp3Names.append(sound[0])
-    if mp3Names:
-        data = {'filenames':mp3Names, 'lastfilename':mp3Names[-1]}
+    question_id = db.session.query(Message.question_id).filter(Message.id == message_id).first()[0]
+    current_question = db.session.query(Question).filter(Question.current==True).first()
+
+    if question_id < current_question.id:
+        new_question = True
+        filename_list = [message.audio_path for message in current_question.messages]
     else:
-        data = {'filenames':mp3Names, 'lastfilename':filename}
+        new_question = False
+        filename_tuples = db.session.query(Message.audio_path).filter(Message.id > message_id).all()
+        filename_list = [tupl[0] for tupl in filename_tuples]
+
+    
+    if filename_list:
+        data = { 'new_question':new_question, 'filenames':filename_list, 'lastfilename':filename_list[-1]}
+    else:
+        data = { 'new_question':new_question, 'filenames':filename_list, 'lastfilename':filename}
+        print(jsonify(data))
     return jsonify(data)
 
 @app.route('/get-sound', methods=['POST'])

@@ -14,7 +14,7 @@ for i in `seq $SMS_MESSAGES` ; do
 	sms="$sms$sms_text"
 done
 echo "test $sms_num $sms" >> /tmp/parseSMSout.txt
-python3 /var/www/concerteurServer/messageReception.py "$sms_num" "$sms"
+python3 /home/elie/Bureau/concerteurServer/messageReception.py "$sms_num" "$sms"
 
 
 exit 0
