@@ -2,6 +2,7 @@ __pycache__
 inbox
 migrations
 venv
+question_archives
 *.pyc
 *.mp3
 .env
