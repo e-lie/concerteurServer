@@ -1,37 +1,22 @@
-from flask import Flask, render_template, request, url_for, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_bootstrap import Bootstrap
-from flask_wtf import Form
-from wtforms import StringField, TextAreaField, SubmitField, DateTimeField
-from wtforms.validators import Required
-from acapelaVaas import get_acapela_sound
+from flask import current_app, render_template, request, url_for, jsonify
+from .. import db, bootstrap
+from ..models import Question, User, Message
+from .forms import AddQuestionForm, AddMessageForm
+from ..acapelaVaas import get_acapela_sound
+from . import main
+
 from datetime import datetime
 from parse import parse
 import os
 
-app = Flask(__name__, static_url_path='/static')
-app.config.from_object(os.environ['APP_SETTINGS'])
-db = SQLAlchemy(app)
 
-from models import Question, User, Message
-
-bootstrap = Bootstrap(app)
-
-class AddQuestionForm(Form):
-    title = StringField('Titre de la question', validators=[Required()])
-    text = TextAreaField('Texte de la question', validators=[Required()])
-    submit = SubmitField('Submit')
-
-class AddMessageForm(Form):
-    num = StringField('numéro de téléphone associé au message (33634354637 pour un portable)', validators=[Required()])
-    text = TextAreaField('Texte du message', validators=[Required()])
-    submit = SubmitField('Submit')
-
-@app.route('/')
+@main.route('/')
 def concerteur_home():
+    print(main.template_folder)
     return render_template('home.html')
+    #return "caca"
 
-@app.route('/add-question', methods=['GET', 'POST'])
+@main.route('/add-question', methods=['GET', 'POST'])
 def add_question():
     question = None
     form = AddQuestionForm()
@@ -52,7 +37,7 @@ def add_question():
         question.archive_name = '{}_{}_{}'.format(question.id, question.title.replace(' ','_'), question.time_created.isoformat())
         #create archive directory
         
-        dirpath = '{}/{}'.format(app.config['QUESTION_ARCHIVE_DIR'], question.archive_name)
+        dirpath = '{}/{}'.format(current_app.config['QUESTION_ARCHIVE_DIR'], question.archive_name)
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
 
@@ -61,19 +46,19 @@ def add_question():
     return render_template('add_question.html', form=form )
 
     
-@app.route('/messages')
+@main.route('/messages')
 def messages():
     questions = db.session.query(Question).order_by(Question.time_created.desc()).all()
     return render_template('messages.html', questions=questions)
     
-@app.route('/trash')
+@main.route('/trash')
 def trash():
     questions = db.session.query(Question).order_by(Question.time_created.desc()).all()
     return render_template('trash.html', questions=questions)
 
 
 #TODO add authentification for security
-@app.route('/add-message', methods=['GET', 'POST'])
+@main.route('/add-message', methods=['GET', 'POST'])
 def add_sms():
 
     form = AddMessageForm()
@@ -100,9 +85,9 @@ def add_sms():
             #create a unique filename (id + timestamp + hash of the sender number)
             #to link the "message" entry to a mp3 file on the server
             mp3_name = message.id.__str__() + '_' + message.time_created.isoformat() + '_' + user.numHash.__str__() + '.mp3'
-            mp3_path = '.' + url_for('static', filename='mp3') + '/' + mp3_name
-            mp3_archive_path = '{}/{}/{}'.format( app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, mp3_name)
-            messages_archive_file = '{}/{}/{}'.format( app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, app.config['MESSAGES_ARCHIVE_FILENAME'])
+            mp3_path = current_app.config['MP3_DIR'] + '/' + mp3_name
+            mp3_archive_path = '{}/{}/{}'.format( current_app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, mp3_name)
+            messages_archive_file = '{}/{}/{}'.format( current_app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, current_app.config['MESSAGES_ARCHIVE_FILENAME'])
 
             message.audio_path = mp3_name
 
@@ -131,7 +116,7 @@ def add_sms():
 
 
 
-@app.route('/del-message/<message_num>', methods=['GET'])
+@main.route('/del-message/<message_num>', methods=['GET'])
 def del_message(message_num):
     message = db.session.query(Message).filter(Message.id == message_num).first()
     message.trashed = True
@@ -139,7 +124,7 @@ def del_message(message_num):
     db.session.commit()
     return 'Message {} mis à la poubelle. <br> <a href="/messages">retour</a>'.format(message_num)
 
-@app.route('/get-sound-list', methods=['POST'])
+@main.route('/get-sound-list', methods=['POST'])
 def get_sound_list():
     
     filename = request.form['lastFilename']
@@ -148,7 +133,18 @@ def get_sound_list():
     else:
         message_id = 1
 
-    question_id = db.session.query(Message.question_id).filter(Message.id == message_id).first()[0]
+    print(message_id)
+
+    if int(message_id) < 0:
+        message_id = 1
+
+    max_id = int(db.session.query(Message.id).order_by(Message.id.desc()).first()[0])
+
+    if int(message_id) > max_id:
+        message_id = 1
+        filename = "{}_mfoaiezjfamozife_moiefamoiezjf".format(max_id)
+
+    question_id = db.session.query(Message.question_id).filter(Message.id == str(message_id)).first()[0]
     current_question = db.session.query(Question).filter(Question.current==True).first()
 
     if question_id < current_question.id:
@@ -167,9 +163,9 @@ def get_sound_list():
         print(jsonify(data))
     return jsonify(data)
 
-@app.route('/get-sound', methods=['POST'])
+@main.route('/get-sound', methods=['POST'])
 def get_sound():
     filename = request.form['soundname']
     mp3Url = 'mp3' + '/' + filename
     return app.send_static_file(mp3Url)
-    
+

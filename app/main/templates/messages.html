@@ -27,7 +27,11 @@
             </div>
             <div class="panel-body">
 	<p>{{message.text }}</p>
-	<p><a href="{{ url_for('static', filename='mp3/'+message.audio_path) }}">audio</a> - <a href="del-message/{{ message.id }}">poubelle !</a></p>
+	<p>
+	{% if message.audio_path %}
+	<a href="{{ url_for('static', filename='mp3/'+message.audio_path) }}">audio</a>
+	{% endif %}
+       	- <a href="del-message/{{ message.id }}">poubelle !</a></p>
         </div>
 	</div>
     {% endfor %}

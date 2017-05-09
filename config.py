@@ -1,6 +1,4 @@
 import os
-basedir = os.path.abspath(os.path.dirname(__file__))
-
 
 class Config(object):
     DEBUG = False
@@ -9,6 +7,7 @@ class Config(object):
     SECRET_KEY = 't_ifJk2jhR,jl$0'
     SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
     QUESTION_ARCHIVE_DIR = 'question_archives'
+    MP3_DIR = './app/main/static/mp3'
     MESSAGES_ARCHIVE_FILENAME = 'messages.txt'
 
 

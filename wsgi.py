@@ -1,8 +1,5 @@
-import os
-from app import app
+from app import *
+from os import environ
 
-app.config.from_object(os.environ['APP_SETTINGS'])
-
-if __name__ == '__main__':
-    app.run()
+application = create_app(environ['APP_SETTINGS'])
 
