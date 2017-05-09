@@ -35,7 +35,7 @@ if retcode == 'OK':
             if isinstance(response_part, tuple):
                 msg = email.message_from_string(response_part[1])
                 subject = msg['subject']
-                num = int(parse("{} +{}",subject)[1])
+                num = int(parse("{} +{:d}{}",subject)[1])
                 params['num'] = num
 
 

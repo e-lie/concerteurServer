@@ -92,7 +92,16 @@ def add_sms():
             message.audio_path = mp3_name
 
             #create the file at that path
-            mp3_sound = get_acapela_sound(message=message.text)
+            num = current_app.config['CREDENTIAL_NUM']
+            loginUser = current_app.config['CREDENTIALS'][num]['loginUser']
+            loginPassword = current_app.config['CREDENTIALS'][num]['loginPassword']
+            print(loginUser)
+            if num < len(current_app.config['CREDENTIALS']):
+                current_app.config['CREDENTIAL_NUM'] = min(current_app.config['CREDENTIAL_NUM']+1,len(current_app.config['CREDENTIALS'])-1)
+            else:
+                current_app.config['CREDENTIAL_NUM'] = 0
+
+            mp3_sound = get_acapela_sound(message=message.text, loginUser=loginUser, loginPassword=loginPassword)
             with open(mp3_path, 'wb') as mp3:
                 mp3.write(mp3_sound)
             with open(mp3_archive_path, 'wb') as archive_mp3:
@@ -129,24 +138,31 @@ def get_sound_list():
     
     filename = request.form['lastFilename']
     if filename:
-        message_id = parse("{}_{}_{}",filename)[0]
+        message_id = int(parse("{}_{}_{}",filename)[0])
     else:
         message_id = 1
 
-    print(message_id)
 
     if int(message_id) < 0:
         message_id = 1
 
+    print(message_id)
+
     max_id = int(db.session.query(Message.id).order_by(Message.id.desc()).first()[0])
 
+    print(max_id)
     if int(message_id) > max_id:
         message_id = 1
         filename = "{}_mfoaiezjfamozife_moiefamoiezjf".format(max_id)
 
-    question_id = db.session.query(Message.question_id).filter(Message.id == str(message_id)).first()[0]
+    question_elem = db.session.query(Message.question_id).filter(Message.id == message_id).first()
+    question_id = -1
+    if question_elem:
+        question_id = int(question_elem[0])
     current_question = db.session.query(Question).filter(Question.current==True).first()
 
+    print(current_question.id)
+    print(question_id)
     if question_id < current_question.id:
         new_question = True
         filename_list = [message.audio_path for message in current_question.messages]
@@ -154,6 +170,7 @@ def get_sound_list():
         new_question = False
         filename_tuples = db.session.query(Message.audio_path).filter(Message.id > message_id).all()
         filename_list = [tupl[0] for tupl in filename_tuples]
+        print(filename_list)
 
     
     if filename_list:
@@ -167,5 +184,5 @@ def get_sound_list():
 def get_sound():
     filename = request.form['soundname']
     mp3Url = 'mp3' + '/' + filename
-    return app.send_static_file(mp3Url)
+    return main.send_static_file(mp3Url)
 
