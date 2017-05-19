@@ -6,4 +6,5 @@ question_archives
 *.pyc
 *.mp3
 *.old
+*.swp
 .env
