@@ -5,8 +5,9 @@ from .forms import AddQuestionForm, AddMessageForm
 from ..acapelaVaas import get_acapela_sound
 from . import main
 
-from datetime import datetime
-from parse import parse
+import shutil
+import parse
+import re
 import os
 
 
@@ -34,9 +35,12 @@ def add_question():
         db.session.add(question)
         db.session.commit()
 
-        question.archive_name = '{}_{}_{}'.format(question.id, question.title.replace(' ','_'), question.time_created.isoformat())
+        #name is <id>_<title>_<timestamp_iso>
+        name = '{}_{}_{}'.format(question.id, question.title, question.time_created.isoformat())
+        #remove problematic characters because this is a path
+        question.archive_name = re.sub('[^\w\-_\.]', '-', name)
+
         #create archive directory
-        
         dirpath = '{}/{}'.format(current_app.config['QUESTION_ARCHIVE_DIR'], question.archive_name)
         if not os.path.exists(dirpath):
             os.makedirs(dirpath)
@@ -91,11 +95,13 @@ def add_sms():
 
             message.audio_path = mp3_name
 
-            #create the file at that path
+            #synthesize the sound using acapela voice as a service
+            # and create the file at that mp3 path
             num = current_app.config['CREDENTIAL_NUM']
             loginUser = current_app.config['CREDENTIALS'][num]['loginUser']
             loginPassword = current_app.config['CREDENTIALS'][num]['loginPassword']
-            print(loginUser)
+
+            #rotate against multiple credentials saved in list in config
             if num < len(current_app.config['CREDENTIALS']):
                 current_app.config['CREDENTIAL_NUM'] = min(current_app.config['CREDENTIAL_NUM']+1,len(current_app.config['CREDENTIALS'])-1)
             else:
@@ -110,6 +116,10 @@ def add_sms():
             with open(messages_archive_file, 'a') as messages_file:
                 messages_file.write('{}\n\n{}\n------\n'.format(message.audio_path, message.text))
 
+            archive_dirpath = '{}/{}'.format(current_app.config['QUESTION_ARCHIVE_DIR'], question.archive_name)
+            zippath = current_app.config['ZIP_DIR']+'/'+question.archive_name
+            print(zippath, archive_dirpath)
+            shutil.make_archive(zippath,'zip',archive_dirpath)
 
             db.session.add(message)
             db.session.commit()
@@ -138,7 +148,7 @@ def get_sound_list():
     
     filename = request.form['lastFilename']
     if filename:
-        message_id = int(parse("{}_{}_{}",filename)[0])
+        message_id = int(parse.parse("{}_{}_{}",filename)[0])
     else:
         message_id = 1
 

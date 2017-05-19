@@ -8,6 +8,7 @@ class Config(object):
     SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
     QUESTION_ARCHIVE_DIR = 'question_archives'
     MP3_DIR = './app/main/static/mp3'
+    ZIP_DIR = './app/main/static/zip'
     MESSAGES_ARCHIVE_FILENAME = 'messages.txt'
     
     CREDENTIALS = [
