@@ -3,7 +3,7 @@ from contextlib import closing
 from .. import db, bootstrap
 from ..models import Question, User, Message
 from .forms import AddQuestionForm, AddMessageForm
-from ..acapelaVaas import get_acapela_sound
+from ..fetch_vaas import fetch_vaas_sound
 from . import main
 
 import shutil
@@ -52,7 +52,7 @@ def add_question():
         mp3_archive_path = "{}/{}".format(dirpath, question.audio_path)
         messages_archive_file = '{}/{}/{}'.format( current_app.config['QUESTION_ARCHIVE_DIR'], question.archive_name, current_app.config['MESSAGES_ARCHIVE_FILENAME'])
 
-        mp3_sound = get_acapela_sound(message=question.text, voice_id='Celine')
+        mp3_sound = fetch_vaas_sound(message=question.text, voice_id='Celine')
         with open(mp3_path, 'wb+') as mp3:
             mp3.write(mp3_sound)
         with open(mp3_archive_path, 'wb+') as archive_mp3:
@@ -129,7 +129,7 @@ def add_sms():
             else:
                 current_app.config['CREDENTIAL_NUM'] = 0
 
-            mp3_sound = get_acapela_sound(message=message.text, voice_id='Mathieu')
+            mp3_sound = fetch_vaas_sound(message=message.text, voice_id='Mathieu')
             with open(mp3_path, 'wb+') as mp3:
                 mp3.write(mp3_sound)
             with open(mp3_archive_path, 'wb+') as archive_mp3:

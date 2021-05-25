@@ -4,7 +4,7 @@ import boto3
 from contextlib import closing
 
 
-def get_acapela_sound(message, end_point='us-east-1', output_format='mp3', voice_id='Celine'):
+def fetch_vaas_sound(message, end_point='us-east-1', output_format='mp3', voice_id='Celine'):
 
     #params = {
     #'cl_login' : loginType,
