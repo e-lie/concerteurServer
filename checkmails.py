@@ -2,20 +2,20 @@ import imaplib, email
 from parse import parse
 from urllib import urlencode
 from urllib2 import urlopen
+import sys
 import quopri
-from email.header import decode_header
 
 IMAP_USER = 'concerteur'
 IMAP_PWD = 'concerteur007'
-IMAP_SERVER = 'pharmakonpc.fr'
+IMAP_SRV = 'leconcerteur.fr'
+CONCERTEUR_SRV = 'https://leconcerteur.fr/concerteur'
 
-conn = imaplib.IMAP4_SSL(IMAP_SERVER)
-
+conn = imaplib.IMAP4_SSL(IMAP_SRV)
 
 try:
     (retcode, capabilities) = conn.login(IMAP_USER, IMAP_PWD)
 except:
-    print sys.exc_info()[1]
+    print(sys.exc_info()[1])
     sys.exit(1)
 
 conn.select('INBOX') # Select inbox or default namespace
@@ -28,17 +28,13 @@ if retcode == 'OK':
         print(message_id)
         #result, data = conn.uid('STORE', '3', '+FLAGS', '\SEEN')
 
-
-
         (retcode, data) = conn.fetch(message_id,'(RFC822)')
         for response_part in data:
             if isinstance(response_part, tuple):
                 msg = email.message_from_string(response_part[1])
                 subject = msg['subject']
-                num = int(parse("{} +{:d}{}",subject)[1])
+                num = int(parse("{}+{:d}{}",subject)[1])
                 params['num'] = num
-
-
 
         (retcode, data) = conn.fetch(message_id,'(UID BODY[TEXT])')
         for response_part in data:
@@ -59,7 +55,7 @@ if retcode == 'OK':
     
         print(params)
         #Local POST request to the flask app using a custom port
-        url = 'https://pharmakonpc.fr/add-message'
+        url = CONCERTEUR_SRV+'/add-message'
 
         # Encode the query string
         querystring = urlencode(params)
@@ -69,7 +65,5 @@ if retcode == 'OK':
 
         #conn.store(message_id, '+FLAGS', '\\Deleted')
     #conn.expunge()
-
-
 
 conn.close()
