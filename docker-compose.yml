@@ -1,0 +1,28 @@
+version: '3'
+services:
+  concerteur:
+    build: .
+    ports:
+      - "9090:9090"
+    # environment:
+    #   - AWS_TOKEN
+    #   - TWILIO_TOKEN
+    #   - CONCERTEUR_DOMAIN
+    volumes:
+      - concerteur_mp3:/concerteur_server/app/static
+    networks:
+      - concerteur_network
+
+  mysql:
+    image: mariadb:10.5
+    environment:
+      - MYSQL_ROOT_PASSWORD=T70fvsWTIBHIYr3E
+      - MYSQL_DATABASE=concerteur
+      - MYSQL_USER=concerteur
+      - MYSQL_PASSWORD=QXjxbJkJclpynVg4
+    networks:
+      - concerteur_network
+
+networks:
+  concerteur_network:
+    driver: bridge
